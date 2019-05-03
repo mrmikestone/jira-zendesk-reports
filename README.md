@@ -1,7 +1,7 @@
 # jira-zendesk-reports
 A Sinatra app for comparing linked tickets between Zendesk and Jira
 
-If you're like me and you find the integration between Zendesk and JIRA to be excellent at creating tickets and about nothing else.
+If you're like me and you find the integration between Zendesk and JIRA to be excellent at creating tickets and about nothing else, have I got great news for you.
 This app is designed to aggregate and report the status and priority of linked Zendesk and JIRA tickets.
 
 ### Getting Started

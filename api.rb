@@ -31,7 +31,6 @@ class ReportFetcher < Sinatra::Base
     request['Content-Type'] = 'application/json'
     request['cache-control'] = 'no-cache'
     request.body = report
-    # binding.pry
     response = http.request(request)
     puts response.read_body
   end

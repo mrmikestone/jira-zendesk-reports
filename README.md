@@ -27,22 +27,22 @@ The jira-zendesk-reports app has 3 endpoints
 1) `/kitchen_sink`
     Currently, this endpoint only responds to a `GET` request and will return an array of hashes:
     Example response:
-    `[
-   {
-      "zd_link":"https://zendesk.com/agent/tickets/:id",
-      "zd_id":280543,
-      "zd_priority":"low",
-      "jira_id":"None"
-   },
-   {
-      "zd_link":"https://zendesk.com/agent/tickets/:id",
-      "zd_id":280310,
-      "zd_priority":"normal",
-      "jira_id":"RSKBUGS-214",
-      "jira_priority":"High",
-      "jira_status":"In Progress"
-   }
-        ]`
+     ```[
+        {
+            "zd_link":"https://zendesk.com/agent/tickets/:id",
+            "zd_id":280543,
+            "zd_priority":"low",
+            "jira_id":"None"
+        },
+        {
+            "zd_link":"https://zendesk.com/agent/tickets/:id",
+            "zd_id":280310,
+            "zd_priority":"normal",
+            "jira_id":"RSKBUGS-214",
+            "jira_priority":"High",
+            "jira_status":"In Progress"
+        }
+        ]```
 
 2) `/zapier`
     Currently, this endpoint only responds to a `GET` request

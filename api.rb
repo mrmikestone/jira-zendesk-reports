@@ -8,6 +8,10 @@ require 'net/http'
 require 'openssl'
 
 class ReportFetcher < Sinatra::Base
+  get '/status' do
+    200
+  end
+
   get '/kitchen_sink' do
     content_type :json
     fetch = Reports.new

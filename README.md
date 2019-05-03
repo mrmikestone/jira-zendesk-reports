@@ -24,7 +24,10 @@ The app is now running on port 4567
 ### API Documentation
 The jira-zendesk-reports app has 3 endpoints
 
-1) `/kitchen_sink`
+1) `/status`
+    Returns 200. If it doesn't, run.
+
+2) `/kitchen_sink`
     Currently, this endpoint only responds to a `GET` request and will return an array of hashes:
     Example response:
 
@@ -47,7 +50,7 @@ The jira-zendesk-reports app has 3 endpoints
      ]
      ```
 
-2) `/zapier`
+3) `/zapier`
     Currently, this endpoint only responds to a `GET` request
 
     Provided you have set a webhook URL in the .env file, this request will POST the response from `/kitchen_sink` on to the zapier webhook

@@ -17,7 +17,7 @@ class Reports
   @@final_product = []
   def fetch_zd_tickets
     @zendesk = ZendeskAPI::Client.new do |config|
-      config.url = ENV['ZD_URL']
+      config.url = ENV['ZD_API_URL']
 
       config.username = ENV['ZD_USER']
 

@@ -17,7 +17,7 @@ class Reports
   @@final_product = []
   def fetch_zd_tickets
     @zendesk = ZendeskAPI::Client.new do |config|
-      config.url = 'https://riskalyze.zendesk.com/api/v2'
+      config.url = ENV['ZD_URL']
 
       config.username = ENV['ZD_USER']
 
@@ -44,7 +44,7 @@ class Reports
     options = {
       username: ENV['JIRA_USER'],
       password: ENV['JIRA_PASS'],
-      site: 'https://riskalyze.atlassian.net:443/',
+      site: ENV['JIRA_URL'],
       context_path: '',
       auth_type: :basic
     }
@@ -52,7 +52,7 @@ class Reports
     @hash_index = 0
     hash_of_zendesk_and_jira_ids.each do |w|
       if w.grep(/orphan/) == ['orphan']
-        @@final_product << { 'zd_link' => "https://riskalyze.zendesk.com/agent/tickets/#{w[0]}",
+        @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
                              'zd_id' => w[0],
                              'zd_priority' => w[1],
                              'jira_id' => 'None' }
@@ -71,7 +71,7 @@ class Reports
             raise e
           end
         end
-        @@final_product << { 'zd_link' => "https://riskalyze.zendesk.com/agent/tickets/#{w[0]}",
+        @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
                              'zd_id' => w[0],
                              'zd_priority' => w[1],
                              'jira_id' => jira_array[0],
@@ -84,7 +84,7 @@ class Reports
   end
 
   def match_zd_jira(ticket_id, ticket_priority)
-    url = URI("https://jiraplugin.zendesk.com/integrations/jira/account/riskalyze/links/for_ticket?ticket_id=#{ticket_id}")
+    url = URI("https://jiraplugin.zendesk.com/integrations/jira/account/#{ENV['ZD_SUBDOMAIN']}/links/for_ticket?ticket_id=#{ticket_id}")
 
     http = Net::HTTP.new(url.host, url.port)
     http.use_ssl = true

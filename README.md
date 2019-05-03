@@ -2,6 +2,7 @@
 A Sinatra app for comparing linked tickets between Zendesk and Jira
 
 If you're like me and you find the integration between Zendesk and JIRA to be excellent at creating tickets and about nothing else, have I got great news for you.
+
 This app is designed to aggregate and report the status and priority of linked Zendesk and JIRA tickets.
 
 ### Getting Started
@@ -25,10 +26,13 @@ The app is now running on port 4567
 The jira-zendesk-reports app has 3 endpoints
 
 1) `/status`
+
     Returns 200. If it doesn't, run.
 
 2) `/kitchen_sink`
+
     Currently, this endpoint only responds to a `GET` request and will return an array of hashes:
+
     Example response:
 
      ```json

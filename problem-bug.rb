@@ -49,7 +49,6 @@ class Reports
       auth_type: :basic
     }
     client = JIRA::Client.new(options)
-    @hash_index = 0
     hash_of_zendesk_and_jira_ids.each do |w|
       if w.grep(/orphan/) == ['orphan']
         @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
@@ -77,7 +76,6 @@ class Reports
                              'jira_id' => jira_array[0],
                              'jira_priority' => jira_array[1],
                              'jira_status' => jira_array[2] }
-        @hash_index += 1
       end
     end
     puts 'Successfully pulled Priority and Status'

@@ -14,15 +14,12 @@ class ReportFetcher < Sinatra::Base
 
   get '/kitchen_sink' do
     content_type :json
-    fetch = Reports.new
-    report = fetch.build_report
-    report
+    Reports.new.build_report
   end
 
   get '/zapier' do
     content_type :json
-    fetch = Reports.new
-    report = fetch.build_report
+    report = Reports.new.build_report
     puts report
 
     url = URI(ENV['ZAPIER_WEBHOOK'])

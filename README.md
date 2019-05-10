@@ -8,13 +8,25 @@ This app is designed to aggregate and report the status and priority of linked Z
 ### Getting Started
 
 Clone the repository using your preferred method
-    SSH: ```git clone git@github.com:riskalyze/jira-zendesk-reports.git```
-    HTTPS: ```git clone https://github.com/riskalyze/test-service.git```
+
+    SSH: git clone git@github.com:riskalyze/jira-zendesk-reports.git
+    HTTPS: git clone https://github.com/riskalyze/test-service.git
 
 Copy the .env.dist to a .env file
-    `cp .env.dist .env`
+
+    cp .env.dist .env
 
 Fill in all the values in the .env file (Zapier URL is optional if you'd like to set up a zap to consume this report)
+
+For the .env value INTEGRATION_TOKEN, you'll have to do some sleuthing in Zendesk(Maybe you can contact support to get it. I dunno, I haven't tried).
+
+    1) Open up a ticket in Zendesk that is linked to a JIRA issue.
+
+    2) Open up Dev tools (F12) and look in the Network tab.
+
+    3) Refresh the page and look for an item with a 'Name' that looks something like 'for_ticket?ticket_id=1234567', it will be close to the bottom, but you may have to scroll up a bit.
+
+    4) In the Headers tab within that request, at the very bottom is an Authorization Header: Bearer <token>. COPY ONLY THE TOKEN, DO NOT INCLUDE 'Bearer'.
 
 Run `bundle install`
 
@@ -31,7 +43,7 @@ The jira-zendesk-reports app has 3 endpoints
 
 2) `/kitchen_sink`
 
-    Currently, this endpoint only responds to a `GET` request and will return an array of hashes:
+    Currently, this endpoint only responds to a `GET` request and will return an array of hashes. This takes several minutes and varies depending on the number of open Zendesk Problems.
 
     Example response:
 
@@ -57,4 +69,4 @@ The jira-zendesk-reports app has 3 endpoints
 3) `/zapier`
     Currently, this endpoint only responds to a `GET` request
 
-    Provided you have set a webhook URL in the .env file, this request will POST the response from `/kitchen_sink` on to the zapier webhook
+    Provided you have set a webhook URL in the .env file, this request will POST the response from `/kitchen_sink` on to the zapier webhook. Zapier does not need any extra configuration to parse this body.

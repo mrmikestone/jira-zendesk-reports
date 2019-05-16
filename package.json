@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A Sinatra app for comparing linked tickets between Zendesk and Jira",
   "scripts": {
-    "start": "bundle exec rackup -p 80"
+    "start": "bundle exec rackup -p 80 --host 0.0.0.0"
   },
   "repository": {
     "type": "git",

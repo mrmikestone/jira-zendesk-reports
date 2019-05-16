@@ -1,0 +1,14 @@
+{
+  "name": "jirazendesk",
+  "version": "1.0.0",
+  "description": "A Sinatra app for comparing linked tickets between Zendesk and Jira",
+  "scripts": {
+    "start": "bundle exec rackup -p 80"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riskalyze/jira-zendesk-reports.git"
+  },
+  "author": "Mike Stone",
+  "homepage": "https://github.com/riskalyze/jira-zendesk-reports#readme"
+}

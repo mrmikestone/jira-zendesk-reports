@@ -28,10 +28,10 @@ class Reports
     puts 'Fetching ZD tickets...'
     @zd_tickets = []
     page = 1
-    pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<solved').count / 100.0).ceil
+    pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<open').count / 100.0).ceil
     while pages >= page
       @zendesk.search(query: 'type:ticket ticket_type:problem status<solved', page: page).each do |i|
-        @zd_tickets << { 'id' => i.id, 'priority' => i.priority }
+        @zd_tickets << { 'id' => i.id, 'priority' => i.priority, 'assignee' => i.group.name }
       end
       page += 1
     end
@@ -54,6 +54,7 @@ class Reports
         @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
                              'zd_id' => w[0],
                              'zd_priority' => w[1],
+                             'zd_assignee' => w[2],
                              'jira_id' => 'None' }
       else
         key = w.grep(/[A-Z]+-[0-9]+/)
@@ -73,6 +74,7 @@ class Reports
         @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
                              'zd_id' => w[0],
                              'zd_priority' => w[1],
+                             'zd_assignee' => w[2],
                              'jira_id' => jira_array[0],
                              'jira_priority' => jira_array[1],
                              'jira_status' => jira_array[2] }
@@ -81,7 +83,7 @@ class Reports
     puts 'Successfully pulled Priority and Status'
   end
 
-  def match_zd_jira(ticket_id, ticket_priority)
+  def match_zd_jira(ticket_id, ticket_priority, ticket_assignee)
     url = URI("https://jiraplugin.zendesk.com/integrations/jira/account/#{ENV['ZD_SUBDOMAIN']}/links/for_ticket?ticket_id=#{ticket_id}")
 
     http = Net::HTTP.new(url.host, url.port)
@@ -99,10 +101,10 @@ class Reports
     if !formatted_body['links'][0].nil?
       array = formatted_body['links']
       array.each do |i|
-        @zd_jira_match_array << [ticket_id, ticket_priority, i['issue_key']]
+        @zd_jira_match_array << [ticket_id, ticket_priority, ticket_assignee, i['issue_key']]
       end
     else
-      @zd_jira_match_array << [ticket_id, ticket_priority, 'orphan']
+      @zd_jira_match_array << [ticket_id, ticket_priority, ticket_assignee, 'orphan']
     end
     @zd_jira_match_array
   end
@@ -111,7 +113,8 @@ class Reports
     zendesk_hash_array.each do |array|
       zd_id = array['id']
       zd_priority = array['priority']
-      @include_jira_keys = match_zd_jira(zd_id, zd_priority)
+      zd_assignee = array['assignee']
+      @include_jira_keys = match_zd_jira(zd_id, zd_priority, zd_assignee)
     end
     puts 'JIRA tickets matched successfully'
     @include_jira_keys

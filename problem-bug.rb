@@ -28,7 +28,7 @@ class Reports
     puts 'Fetching ZD tickets...'
     @zd_tickets = []
     page = 1
-    pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<open').count / 100.0).ceil
+    pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<solved').count / 100.0).ceil
     while pages >= page
       @zendesk.search(query: 'type:ticket ticket_type:problem status<solved', page: page).each do |i|
         @zd_tickets << { 'id' => i.id, 'priority' => i.priority, 'assignee' => i.group.name }

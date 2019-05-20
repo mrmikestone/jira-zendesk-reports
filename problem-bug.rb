@@ -76,7 +76,8 @@ class Reports
                              'zd_priority' => w[1],
                              'zd_assignee' => w[2],
                              'jira_id' => jira_array[0],
-                             'jira_priority' => jira_array[1],
+                             # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
+                             'jira_priority' => jira_array[1].downcase,
                              'jira_status' => jira_array[2] }
       end
     end

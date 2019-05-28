@@ -8,6 +8,7 @@ require 'net/http'
 require 'openssl'
 
 class ReportFetcher < Sinatra::Base
+  set :lock, 'true'
   get '/status' do
     200
   end

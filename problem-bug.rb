@@ -14,7 +14,10 @@ require 'rack'
 # integration between them to generate reports on mismatches between the
 # two systems
 class Reports
-  @@final_product = []
+  def initialize
+    @final_product = []
+  end
+
   def fetch_zd_tickets
     @zendesk = ZendeskAPI::Client.new do |config|
       config.url = ENV['ZD_API_URL']
@@ -29,6 +32,7 @@ class Reports
     @zd_tickets = []
     page = 1
     pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<solved').count / 100.0).ceil
+    puts pages
     while pages >= page
       @zendesk.search(query: 'type:ticket ticket_type:problem status<solved', page: page).each do |i|
         @zd_tickets << { 'id' => i.id, 'priority' => i.priority, 'assignee' => i.group.name }
@@ -51,11 +55,11 @@ class Reports
     client = JIRA::Client.new(options)
     hash_of_zendesk_and_jira_ids.each do |w|
       if w.grep(/orphan/) == ['orphan']
-        @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
-                             'zd_id' => w[0],
-                             'zd_priority' => w[1],
-                             'zd_assignee' => w[2],
-                             'jira_id' => 'None' }
+        @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
+                            'zd_id' => w[0],
+                            'zd_priority' => w[1],
+                            'zd_assignee' => w[2],
+                            'jira_id' => 'None' }
       else
         key = w.grep(/[A-Z]+-[0-9]+/)
         # binding.pry if key.size > 1
@@ -71,14 +75,14 @@ class Reports
             raise e
           end
         end
-        @@final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
-                             'zd_id' => w[0],
-                             'zd_priority' => w[1],
-                             'zd_assignee' => w[2],
-                             'jira_id' => jira_array[0],
-                             # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
-                             'jira_priority' => jira_array[1].downcase,
-                             'jira_status' => jira_array[2] }
+        @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
+                            'zd_id' => w[0],
+                            'zd_priority' => w[1],
+                            'zd_assignee' => w[2],
+                            'jira_id' => jira_array[0],
+                            # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
+                            'jira_priority' => jira_array[1].downcase,
+                            'jira_status' => jira_array[2] }
       end
     end
     puts 'Successfully pulled Priority and Status'
@@ -134,6 +138,6 @@ class Reports
 
     puts 'Function finished, sending results'
 
-    @@final_product.to_json
+    @final_product.to_json
   end
 end

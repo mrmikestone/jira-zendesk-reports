@@ -44,6 +44,7 @@ class Reports
 
   def fetch_jira_priority_and_status(hash_of_zendesk_and_jira_ids)
     puts 'Fetching priority and status of JIRA issues...'
+    timestamp = DateTime.now.strftime('%Y-%m-%d')
     options = {
       username: ENV['JIRA_USER'],
       password: ENV['JIRA_PASS'],
@@ -58,7 +59,8 @@ class Reports
                             'zd_id' => w[0],
                             'zd_priority' => w[1],
                             'zd_assignee' => w[2],
-                            'jira_id' => 'None' }
+                            'jira_id' => 'None',
+                            'timestamp' => timestamp }
       else
         key = w.grep(/[A-Z]+-[0-9]+/)
         # binding.pry if key.size > 1
@@ -81,7 +83,8 @@ class Reports
                             'jira_id' => jira_array[0],
                             # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
                             'jira_priority' => jira_array[1].downcase,
-                            'jira_status' => jira_array[2] }
+                            'jira_status' => jira_array[2],
+                            'timestamp' => timestamp }
       end
     end
     puts 'Successfully pulled Priority and Status'

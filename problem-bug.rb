@@ -42,6 +42,34 @@ class Reports
     @zd_tickets
   end
 
+  def bulk_fetch_jira_information(hash_of_zendesk_and_jira_ids)
+    jira_keys = []
+    options = {
+      username: ENV['JIRA_USER'],
+      password: ENV['JIRA_PASS'],
+      site: ENV['JIRA_URL'],
+      context_path: '',
+      auth_type: :basic
+    }
+    client = JIRA::Client.new(options)
+    hash_of_zendesk_and_jira_ids.each do |w|
+      jira_keys << w[3] if w[3] != 'orphan'
+    end
+    jira_keys.each_slice(50) do |jira_keys_array|
+      non_array = jira_keys_array.join(',')
+      binding.pry
+      begin
+          relevant_jira_information = client.Issue.jql("key IN (#{non_array})")
+      rescue JIRA::HTTPError => e
+        if e.response.code = '400'
+          fetch_jira_priority_and_status(jira_keys_array)
+        else
+          raise e
+        end
+      end
+    end
+  end
+
   def fetch_jira_priority_and_status(hash_of_zendesk_and_jira_ids)
     puts 'Fetching priority and status of JIRA issues...'
     timestamp = DateTime.now.strftime('%Y-%m-%d')

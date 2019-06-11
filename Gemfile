@@ -12,3 +12,5 @@ gem 'zendesk_api', '~> 1.17'
 gem 'jira-ruby', '~> 1.6'
 
 gem 'pry', '~> 0.12.2'
+
+gem "pry-nav", "~> 0.3.0"

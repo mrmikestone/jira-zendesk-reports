@@ -40,9 +40,9 @@ class Reports
   def fetch_zd_tickets
     puts 'Fetching ZD tickets...'
     page = 1
-    pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<open').count / 100.0).ceil
+    pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<solved').count / 100.0).ceil
     while pages >= page
-      @zendesk.search(query: 'type:ticket ticket_type:problem status<open', page: page).each do |i|
+      @zendesk.search(query: 'type:ticket ticket_type:problem status<solved', page: page).each do |i|
         @zd_tickets << { 'id' => i.id, 'priority' => i.priority, 'assignee' => i.group.name }
       end
       page += 1
@@ -58,18 +58,16 @@ class Reports
     end
     jira_keys.each_slice(50) do |jira_keys_array|
       non_array = jira_keys_array.join(',')
-      binding.pry
       begin
         relevant_jira_information = @jira_client.Issue.jql("key IN (#{non_array})")
-        binding.pry
       rescue JIRA::HTTPError => e
         if e.response.code == '400'
           reconcile_bulk_jira_fetch(jira_keys_array)
         else
           raise e
         end
-        parse_jira_body(relevant_jira_information)
       end
+      parse_jira_body(relevant_jira_information)
     end
   end
 
@@ -91,56 +89,14 @@ class Reports
   end
 
   def parse_jira_body(jira_body)
-    binding.pry
     jira_body.each do |i|
       results = {
         'priority' => i.fields['priority']['name'],
         'status' => i.fields['status']['name'],
-        'key' => i['key']
+        'key' => i.key
       }
       @jira_results << results
-      binding.pry
     end
-  end
-
-  def fetch_jira_priority_and_status(hash_of_zendesk_and_jira_ids)
-    puts 'Fetching priority and status of JIRA issues...'
-    timestamp = DateTime.now.strftime('%Y-%m-%d')
-    hash_of_zendesk_and_jira_ids.each do |w|
-      if w.grep(/orphan/) == ['orphan']
-        @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
-                            'zd_id' => w[0],
-                            'zd_priority' => w[1],
-                            'zd_assignee' => w[2],
-                            'jira_id' => 'None',
-                            'timestamp' => timestamp }
-      else
-        key = w.grep(/[A-Z]+-[0-9]+/)
-        # binding.pry if key.size > 1
-        next unless key != []
-
-        begin
-          relevant_jira_information = @jira_client.Issue.jql("key = #{key.first}")
-          jira_array = [key.first, relevant_jira_information.first.fields['priority']['name'], relevant_jira_information.first.fields['status']['name']]
-        rescue JIRA::HTTPError => e
-          if e.response.code == '400'
-            jira_array = [key.first, 'Unknown', 'Unknown']
-          else
-            raise e
-          end
-        end
-        @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{w[0]}",
-                            'zd_id' => w[0],
-                            'zd_priority' => w[1],
-                            'zd_assignee' => w[2],
-                            'jira_id' => jira_array[0],
-                            # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
-                            'jira_priority' => jira_array[1].downcase,
-                            'jira_status' => jira_array[2],
-                            'timestamp' => timestamp }
-      end
-    end
-    puts 'Successfully pulled Priority and Status'
   end
 
   def match_zd_jira(ticket_id, ticket_priority, ticket_assignee)
@@ -164,7 +120,13 @@ class Reports
         @zd_jira_match_array << [ticket_id, ticket_priority, ticket_assignee, i['issue_key']]
       end
     else
-      @zd_jira_match_array << [ticket_id, ticket_priority, ticket_assignee, 'orphan']
+      timestamp = DateTime.now.strftime('%Y-%m-%d')
+      @final_product << { 'zd_id' => ticket_id,
+                          'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{ticket_id}",
+                          'zd_priority' => ticket_priority,
+                          'zd_assignee' => ticket_assignee,
+                          'jira_id' => 'None',
+                          'timestamp' => timestamp }
     end
     @zd_jira_match_array
   end
@@ -180,6 +142,26 @@ class Reports
     @include_jira_keys
   end
 
+  def consolidate_jira_zendesk
+    @jira_results.each do |jira_block|
+      @zd_jira_match_array.each_with_index do |zd_array, _i|
+        match = zd_array.find { |x| x == jira_block['key'] }
+        next if match.nil?
+
+        timestamp = DateTime.now.strftime('%Y-%m-%d')
+        @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{zd_array[0]}",
+                            'zd_id' => zd_array[0],
+                            'zd_priority' => zd_array[1],
+                            'zd_assignee' => zd_array[2],
+                            'jira_id' => zd_array[3],
+                            # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
+                            'jira_priority' => jira_block['priority'].downcase,
+                            'jira_status' => jira_block['status'],
+                            'timestamp' => timestamp }
+      end
+    end
+  end
+
   def build_report
     @zd_jira_match_array = []
 
@@ -190,6 +172,8 @@ class Reports
     hash_of_zendesk_and_jira_ids = grab_jira_id(zendesk_hash)
 
     bulk_fetch_jira_information(hash_of_zendesk_and_jira_ids)
+
+    consolidate_jira_zendesk
 
     puts 'Function finished, sending results'
 

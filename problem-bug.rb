@@ -51,7 +51,7 @@ class Reports
     @zd_tickets
   end
 
-  def bulk_fetch_jira_information(hash_of_zendesk_and_jira_ids)
+  def bulk_fetch_jira_information
     jira_keys = []
     hash_of_zendesk_and_jira_ids.each do |w|
       jira_keys << w[3] if w[3] != 'orphan'

@@ -53,7 +53,7 @@ class Reports
 
   def bulk_fetch_jira_information
     jira_keys = []
-    hash_of_zendesk_and_jira_ids.each do |w|
+    @include_jira_keys.each do |w|
       jira_keys << w[3] if w[3] != 'orphan'
     end
     jira_keys.each_slice(50) do |jira_keys_array|

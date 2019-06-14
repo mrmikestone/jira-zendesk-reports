@@ -59,7 +59,7 @@ class Reports
     jira_keys.each_slice(50) do |jira_keys_array|
       string_of_jira_keys = jira_keys_array.join(',')
       begin
-        relevant_jira_information = @jira_client.Issue.jql("key IN (#{non_array})")
+        relevant_jira_information = @jira_client.Issue.jql("key IN (#{string_of_jira_keys})")
       rescue JIRA::HTTPError => e
         if e.response.code == '400'
           reconcile_bulk_jira_fetch(jira_keys_array)

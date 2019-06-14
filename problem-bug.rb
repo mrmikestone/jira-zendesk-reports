@@ -57,7 +57,7 @@ class Reports
       jira_keys << w[3] if w[3] != 'orphan'
     end
     jira_keys.each_slice(50) do |jira_keys_array|
-      non_array = jira_keys_array.join(',')
+      string_of_jira_keys = jira_keys_array.join(',')
       begin
         relevant_jira_information = @jira_client.Issue.jql("key IN (#{non_array})")
       rescue JIRA::HTTPError => e

@@ -37,6 +37,30 @@ class Reports
     end
   end
 
+  def fetch_legend
+    @legend = []
+    url = URI("https://#{ENV['ZD_SUBDOMAIN']}.zendesk.com/api/services/jira/links")
+
+    http = Net::HTTP.new(url.host, url.port)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    request = Net::HTTP::Get.new(url)
+    request['Content-Type'] = 'application/json'
+    request['Authorization'] = "Basic #{ENV['INTEGRATION_TOKEN']}"
+    request['cache-control'] = 'no-cache'
+
+    response = http.request(request)
+
+    formatted_body = JSON[response.read_body]
+    legend = formatted_body['links']
+    @jira_keys = []
+    @legend << legend
+    legend.each do |legend_hash|
+      @jira_keys << legend_hash['issue_key']
+    end
+  end
+
   def fetch_zd_tickets
     puts 'Fetching ZD tickets...'
     page = 1
@@ -48,15 +72,15 @@ class Reports
       page += 1
     end
     puts 'ZD tickets fetched successfully.'
-    @zd_tickets
   end
 
   def bulk_fetch_jira_information
-    jira_keys = []
-    @include_jira_keys.each do |w|
-      jira_keys << w[3] if w[3] != 'orphan'
-    end
-    jira_keys.each_slice(50) do |jira_keys_array|
+    # jira_keys = []
+    # @zd_jira_match_array.each do |w|
+    #   # binding.pry
+    #   jira_keys << w[3] if w[3] != 'orphan'
+    # end
+    @jira_keys.each_slice(50) do |jira_keys_array|
       string_of_jira_keys = jira_keys_array.join(',')
       begin
         relevant_jira_information = @jira_client.Issue.jql("key IN (#{string_of_jira_keys})")
@@ -67,6 +91,7 @@ class Reports
           raise e
         end
       end
+      binding.pry
       parse_jira_body(relevant_jira_information)
     end
   end
@@ -84,99 +109,136 @@ class Reports
           raise e
         end
       end
+      binding.pry
       parse_jira_body(relevant_jira_information)
     end
   end
 
   def parse_jira_body(jira_body)
     jira_body.each do |i|
-      results = {
-        'priority' => i.fields['priority']['name'],
-        'status' => i.fields['status']['name'],
-        'key' => i.key
-      }
+      results = if i.fields['priority'].nil?
+                  { 'priority' => 'Unknown',
+                    'status' => i.fields['status']['name'],
+                    'key' => i.key }
+                else
+                  {
+                    'priority' => i.fields['priority']['name'],
+                    'status' => i.fields['status']['name'],
+                    'key' => i.key
+                  }
+              end
       @jira_results << results
     end
+    binding.pry
   end
 
-  def match_zd_jira(ticket_id, ticket_priority, ticket_assignee)
-    url = URI("https://jiraplugin.zendesk.com/integrations/jira/account/#{ENV['ZD_SUBDOMAIN']}/links/for_ticket?ticket_id=#{ticket_id}")
+  def consolidate_zendesk
+    @zd_ticket.each do |zd|
+      @legend.each do |legend|
+        next if legend.grep(zd['id']) == []
 
-    http = Net::HTTP.new(url.host, url.port)
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-    request = Net::HTTP::Get.new(url)
-    request['Content-Type'] = 'application/json'
-    request['Authorization'] = "Bearer #{ENV['INTEGRATION_TOKEN']}"
-    request['cache-control'] = 'no-cache'
-
-    response = http.request(request)
-    body = response.read_body
-    formatted_body = JSON[body]
-    if !formatted_body['links'][0].nil?
-      array = formatted_body['links']
-      array.each do |i|
-        @zd_jira_match_array << [ticket_id, ticket_priority, ticket_assignee, i['issue_key']]
-      end
-    else
-      timestamp = DateTime.now.strftime('%Y-%m-%d')
-      @final_product << { 'zd_id' => ticket_id,
-                          'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{ticket_id}",
-                          'zd_priority' => ticket_priority,
-                          'zd_assignee' => ticket_assignee,
-                          'jira_id' => 'None',
-                          'timestamp' => timestamp }
-    end
-    @zd_jira_match_array
-  end
-
-  def grab_jira_id(zendesk_hash_array)
-    zendesk_hash_array.each do |array|
-      zd_id = array['id']
-      zd_priority = array['priority']
-      zd_assignee = array['assignee']
-      @include_jira_keys = match_zd_jira(zd_id, zd_priority, zd_assignee)
-    end
-    puts 'JIRA tickets matched successfully'
-    @include_jira_keys
-  end
-
-  def consolidate_jira_zendesk
-    @jira_results.each do |jira_block|
-      @zd_jira_match_array.each_with_index do |zd_array, _i|
-        match = zd_array.find { |x| x == jira_block['key'] }
-        next if match.nil?
-
-        timestamp = DateTime.now.strftime('%Y-%m-%d')
-        @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{zd_array[0]}",
-                            'zd_id' => zd_array[0],
-                            'zd_priority' => zd_array[1],
-                            'zd_assignee' => zd_array[2],
-                            'jira_id' => zd_array[3],
-                            # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
-                            'jira_priority' => jira_block['priority'].downcase,
-                            'jira_status' => jira_block['status'],
-                            'timestamp' => timestamp }
+        @zd_jira_match_array << {
+          'zd_id' => zd['id'],
+          'zd_priority' => zd['priority'],
+          'zd_assignee' => zd['assignee'],
+          'jira_key' => legend['issue_key']
+        }
       end
     end
+    binding.pry
   end
+
+  def build_final_product
+    @zd_jira_match_array.each do |match|
+      @jira_results.each do |jira|
+        next if jira.grep(match['jira_key']) == []
+
+        match.store('jira_priority', jira['priority'])
+        match.store('jira_status', jira['status'])
+        @final_product << match
+      end
+    end
+    binding.pry
+  end
+
+  # def match_zd_jira(ticket_id, ticket_priority, ticket_assignee)
+  #   url = URI("https://jiraplugin.zendesk.com/integrations/jira/account/#{ENV['ZD_SUBDOMAIN']}/links/for_ticket?ticket_id=#{ticket_id}")
+
+  #   http = Net::HTTP.new(url.host, url.port)
+  #   http.use_ssl = true
+  #   http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+  #   request = Net::HTTP::Get.new(url)
+  #   request['Content-Type'] = 'application/json'
+  #   request['Authorization'] = "Bearer #{ENV['INTEGRATION_TOKEN']}"
+  #   request['cache-control'] = 'no-cache'
+
+  #   response = http.request(request)
+  #   body = response.read_body
+  #   formatted_body = JSON[body]
+  #   if !formatted_body['links'][0].nil?
+  #     array = formatted_body['links']
+  #     array.each do |i|
+  #       @zd_jira_match_array << [ticket_id, ticket_priority, ticket_assignee, i['issue_key']]
+  #     end
+  #   else
+  #     timestamp = DateTime.now.strftime('%Y-%m-%d')
+  #     @final_product << { 'zd_id' => ticket_id,
+  #                         'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{ticket_id}",
+  #                         'zd_priority' => ticket_priority,
+  #                         'zd_assignee' => ticket_assignee,
+  #                         'jira_id' => 'None',
+  #                         'timestamp' => timestamp }
+  #   end
+  # end
+
+  # def grab_jira_id
+  #   @zd_tickets.each do |array|
+  #     match_zd_jira(array['id'], array['priority'], array['assignee'])
+  #   end
+  #   puts 'JIRA tickets matched successfully'
+  # end
+
+  # def consolidate_jira_zendesk
+  #   @jira_results.each do |jira_block|
+  #     @zd_jira_match_array.each_with_index do |zd_array, _i|
+  #       match = zd_array.find { |x| x == jira_block['key'] }
+  #       next if match.nil?
+
+  #       timestamp = DateTime.now.strftime('%Y-%m-%d')
+  #       @final_product << { 'zd_link' => "#{ENV['ZD_LINK_URL']}/agent/tickets/#{zd_array[0]}",
+  #                           'zd_id' => zd_array[0],
+  #                           'zd_priority' => zd_array[1],
+  #                           'zd_assignee' => zd_array[2],
+  #                           'jira_id' => zd_array[3],
+  #                           # zendesk priority is always all lower case, setting JIRA priority to lowercase makes matching easier
+  #                           'jira_priority' => jira_block['priority'].downcase,
+  #                           'jira_status' => jira_block['status'],
+  #                           'timestamp' => timestamp }
+  #     end
+  #   end
+  # end
 
   def build_report
     @zd_jira_match_array = []
 
-    zendesk_hash = fetch_zd_tickets
+    fetch_legend
+
+    fetch_zd_tickets
 
     puts 'Matching JIRA tickets to Zendesk IDs...'
 
-    hash_of_zendesk_and_jira_ids = grab_jira_id(zendesk_hash)
+    # grab_jira_id
 
-    bulk_fetch_jira_information(hash_of_zendesk_and_jira_ids)
+    bulk_fetch_jira_information
 
-    consolidate_jira_zendesk
+    consolidate_zendesk
+
+    build_final_product
 
     puts 'Function finished, sending results'
 
     @final_product.to_json
+    binding.pry
   end
 end

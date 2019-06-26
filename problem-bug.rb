@@ -55,10 +55,34 @@ class Reports
     formatted_body = JSON[response.read_body]
     legend = formatted_body['links']
     @jira_keys = []
-    @legend << legend
-    legend.each do |legend_hash|
-      @jira_keys << legend_hash['issue_key']
-    end
+    @legend += legend
+    # legend.each do |legend_hash|
+    #   @jira_keys << legend_hash['issue_key']
+    # end
+    @since_id = legend.last['id']
+    # binding.pry
+    paginate_through_legend(@since_id) while (@legend.size % 1000).zero?
+  end
+
+  def paginate_through_legend(since_id)
+    url = URI("https://#{ENV['ZD_SUBDOMAIN']}.zendesk.com/api/services/jira/links?since_id=#{since_id}")
+
+    http = Net::HTTP.new(url.host, url.port)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    request = Net::HTTP::Get.new(url)
+    request['Content-Type'] = 'application/json'
+    request['Authorization'] = "Basic #{ENV['INTEGRATION_TOKEN']}"
+    request['cache-control'] = 'no-cache'
+
+    response = http.request(request)
+
+    formatted_body = JSON[response.read_body]
+    legend = formatted_body['links']
+    @legend += legend
+    # binding.pry
+    @since_id = legend.last['id']
   end
 
   def fetch_zd_tickets
@@ -91,7 +115,7 @@ class Reports
           raise e
         end
       end
-      binding.pry
+      # binding.pry
       parse_jira_body(relevant_jira_information)
     end
   end
@@ -109,7 +133,7 @@ class Reports
           raise e
         end
       end
-      binding.pry
+      # binding.pry
       parse_jira_body(relevant_jira_information)
     end
   end
@@ -129,29 +153,26 @@ class Reports
               end
       @jira_results << results
     end
-    binding.pry
+    # binding.pry
   end
 
   def consolidate_zendesk
-    @zd_ticket.each do |zd|
-      @legend.each do |legend|
-        next if legend.grep(zd['id']) == []
+    @zd_tickets.each.with_index do |zd, index|
+      @legend.each do |mini_legend|
+        # binding.pry
+        next unless mini_legend.value?(zd['id'].to_s)
 
-        @zd_jira_match_array << {
-          'zd_id' => zd['id'],
-          'zd_priority' => zd['priority'],
-          'zd_assignee' => zd['assignee'],
-          'jira_key' => legend['issue_key']
-        }
+        @zd_tickets[index].store('jira_key', mini_legend['issue_key'])
+        @jira_keys << mini_legend['issue_key']
       end
     end
-    binding.pry
+    # binding.pry
   end
 
   def build_final_product
-    @zd_jira_match_array.each do |match|
+    @zd_tickets.each do |match|
       @jira_results.each do |jira|
-        next if jira.grep(match['jira_key']) == []
+        next unless jira.value?(match['jira_key'])
 
         match.store('jira_priority', jira['priority'])
         match.store('jira_status', jira['status'])
@@ -230,9 +251,9 @@ class Reports
 
     # grab_jira_id
 
-    bulk_fetch_jira_information
-
     consolidate_zendesk
+
+    bulk_fetch_jira_information
 
     build_final_product
 

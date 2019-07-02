@@ -171,11 +171,15 @@ class Reports
 
   def build_final_product
     @zd_tickets.each do |match|
-      @jira_results.each do |jira|
-        next unless jira.value?(match['jira_key'])
+      if match.key?('jira_key')
+        @jira_results.each do |jira|
+          next unless jira.value?(match['jira_key'])
 
-        match.store('jira_priority', jira['priority'])
-        match.store('jira_status', jira['status'])
+          match.store('jira_priority', jira['priority'])
+          match.store('jira_status', jira['status'])
+          @final_product << match
+        end
+      else
         @final_product << match
       end
     end

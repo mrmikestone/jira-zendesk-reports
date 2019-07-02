@@ -176,8 +176,6 @@ class Reports
   end
 
   def build_report
-    @zd_jira_match_array = []
-
     fetch_legend
 
     fetch_zd_tickets

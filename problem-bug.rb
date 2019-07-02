@@ -149,11 +149,11 @@ class Reports
   end
 
   def consolidate_zendesk
-    @zd_tickets.each.with_index do |zd, index|
+    @zd_tickets.each do |zd|
       @legend.each do |mini_legend|
         next unless mini_legend.value?(zd['id'].to_s)
 
-        @zd_tickets[index].store('jira_key', mini_legend['issue_key'])
+        zd.store('jira_key', mini_legend['issue_key'])
         @jira_keys << mini_legend['issue_key']
       end
     end

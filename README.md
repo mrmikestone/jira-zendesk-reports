@@ -18,15 +18,7 @@ Copy the .env.dist to a .env file
 
 Fill in all the values in the .env file (Zapier URL is optional if you'd like to set up a zap to consume this report)
 
-For the .env value INTEGRATION_TOKEN, you'll have to do some sleuthing in Zendesk(Maybe you can contact support to get it. I dunno, I haven't tried).
-
-    1) Open up a ticket in Zendesk that is linked to a JIRA issue.
-
-    2) Open up Dev tools (F12) and look in the Network tab.
-
-    3) Refresh the page and look for an item with a 'Name' that looks something like 'for_ticket?ticket_id=1234567', it will be close to the bottom, but you may have to scroll up a bit.
-
-    4) In the Headers tab within that request, at the very bottom is an Authorization Header: Bearer <token>. COPY ONLY THE TOKEN, DO NOT INCLUDE 'Bearer'.
+For the .env value INTEGRATION_TOKEN, you'll have to Base64 encode ZD_USERNAME/token:ZD_API_KEY
 
 Run `bundle install`
 

@@ -127,7 +127,7 @@ class Reports
         end
       end
 
-      parse_jira_body(relevant_jira_information)
+      parse_jira_body(relevant_jira_information) unless relevant_jira_information.nil?
     end
   end
 

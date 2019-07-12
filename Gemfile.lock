@@ -30,6 +30,8 @@ GEM
     pry (0.12.2)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
+    pry-nav (0.3.0)
+      pry (>= 0.9.10, < 0.13.0)
     rack (2.0.7)
     rack-protection (2.0.5)
       rack
@@ -56,6 +58,7 @@ DEPENDENCIES
   dotenv (~> 2.7)
   jira-ruby (~> 1.6)
   pry (~> 0.12.2)
+  pry-nav (~> 0.3.0)
   sinatra
   zendesk_api (~> 1.17)
 

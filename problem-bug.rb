@@ -151,7 +151,7 @@ class Reports
   def consolidate_zendesk
     @zd_tickets.each do |zd|
       @legend.each do |mini_legend|
-        next unless mini_legend.value?(zd['id'].to_s)
+        next unless mini_legend.value?(zd['zd_id'].to_s)
 
         zd.store('jira_key', mini_legend['issue_key'])
         @jira_keys << mini_legend['issue_key']
@@ -162,6 +162,7 @@ class Reports
   def build_final_product
     @zd_tickets.each do |match|
       if match.key?('jira_key')
+
         @jira_results.each do |jira|
           next unless jira.value?(match['jira_key'])
 

@@ -89,7 +89,7 @@ class Reports
     pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<solved').count / 100.0).ceil
     while pages >= page
       @zendesk.search(query: 'type:ticket ticket_type:problem status<solved', page: page).each do |i|
-        @zd_tickets << { 'zd_id' => i.id, 'zd_priority' => i.priority, 'zd_assignee' => i.group.name, 'timestamp'=> time }
+        @zd_tickets << { 'zd_id' => i.id, 'zd_priority' => i.priority, 'zd_assignee' => i.group.name, 'timestamp' => time }
       end
       page += 1
     end
@@ -100,7 +100,7 @@ class Reports
     @jira_keys.each_slice(50) do |jira_keys_array|
       string_of_jira_keys = jira_keys_array.join(',')
       begin
-        relevant_jira_information = @jira_client.Issue.jql("key IN (#{string_of_jira_keys})")
+        relevant_jira_information = @jira_client.Issue.jql("id IN (#{string_of_jira_keys})")
       rescue JIRA::HTTPError => e
         if e.response.code == '400'
           reconcile_bulk_jira_fetch(jira_keys_array)
@@ -116,7 +116,7 @@ class Reports
   def reconcile_bulk_jira_fetch(jira_keys_array)
     jira_keys_array.each do |key|
       begin
-        relevant_jira_information = @jira_client.Issue.jql("key = #{key}")
+        relevant_jira_information = @jira_client.Issue.jql("id = #{key}")
       rescue JIRA::HTTPError => e
         if e.response.code == '400'
           @jira_results << { 'key' => key,
@@ -136,12 +136,15 @@ class Reports
       results = if i.fields['priority'].nil?
                   { 'priority' => 'Unknown',
                     'status' => i.fields['status']['name'],
-                    'key' => i.key }
+                    'key' => i.key,
+                    'id' => i.id
+                  }
                 else
                   {
                     'priority' => i.fields['priority']['name'],
                     'status' => i.fields['status']['name'],
-                    'key' => i.key
+                    'key' => i.key,
+                    'id' => i.id
                   }
                 end
       @jira_results << results
@@ -154,23 +157,27 @@ class Reports
         next unless mini_legend.value?(zd['zd_id'].to_s)
 
         zd.store('jira_key', mini_legend['issue_key'])
-        @jira_keys << mini_legend['issue_key']
+        zd.store('jira_id', mini_legend['issue_id'])
+        @jira_keys << mini_legend['issue_id']
       end
     end
   end
 
   def build_final_product
+    @count = 1
+    @failcase = 1
     @zd_tickets.each do |match|
-      if match.key?('jira_key')
-
+      if match.key?('jira_id')
+        @count += 1
         @jira_results.each do |jira|
-          next unless jira.value?(match['jira_key'])
+          next unless jira.value?(match['jira_id'])
 
           match.store('jira_priority', jira['priority'].downcase)
           match.store('jira_status', jira['status'])
           @final_product << match
         end
       else
+        @failcase += 1
         @final_product << match
       end
     end
@@ -190,6 +197,8 @@ class Reports
     build_final_product
 
     puts 'Function finished, sending results'
+
+    binding.pry
 
     @final_product.to_json
   end

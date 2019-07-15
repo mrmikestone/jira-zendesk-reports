@@ -164,11 +164,8 @@ class Reports
   end
 
   def build_final_product
-    @count = 1
-    @failcase = 1
     @zd_tickets.each do |match|
       if match.key?('jira_id')
-        @count += 1
         @jira_results.each do |jira|
           next unless jira.value?(match['jira_id'])
 
@@ -177,7 +174,6 @@ class Reports
           @final_product << match
         end
       else
-        @failcase += 1
         @final_product << match
       end
     end
@@ -197,8 +193,6 @@ class Reports
     build_final_product
 
     puts 'Function finished, sending results'
-
-    binding.pry
 
     @final_product.to_json
   end

@@ -85,7 +85,6 @@ class Reports
   def fetch_zd_tickets
     puts 'Fetching ZD tickets...'
     time = Time.now.strftime("%d/%m/%Y")
-    binding.pry
     page = 1
     pages = (@zendesk.search(query: 'type:ticket ticket_type:problem status<solved').count / 100.0).ceil
     while pages >= page

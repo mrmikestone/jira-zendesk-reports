@@ -6,4 +6,5 @@
 # https://app.getguru.com/card/eio7y4Xi/Per-Repo-PR-Approver-Management
 ############################################################
 
-*                     @nathanchilton @mrmikestone92 @mikejohns7
+*                     @riskalyze/qa
+.github/CODEOWNERS    @riskalyze/codeowners-approvers
